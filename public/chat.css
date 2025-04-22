@@ -1,0 +1,82 @@
+* {
+    margin: 0px;
+    padding: 0px;
+}
+
+header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 40px;
+    background-color: whitesmoke;
+}
+
+.messageDiv {
+    display: flex;
+    flex-direction: column;
+    /* Allow the list to grow vertically */
+    justify-content: center;
+    align-items: center;
+    background-color: aquamarine;
+    margin-left: auto;
+    margin-right: auto;
+    width: 40%;
+    padding: 10px;
+    /* Add some padding for spacing */
+}
+
+#messageList {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+
+#messageList li {
+    padding: 5px;
+    margin-bottom: 5px;
+    list-style: none;
+    background-color: white;
+    /* Background for each item */
+    border-radius: 5px;
+    /* Optional: rounded corners */
+}
+
+.succesMessage {
+    background-color: rgb(0, 255, 0, 0.5);
+    margin: 20px;
+    padding: 5px;
+}
+
+.failureMessage {
+    /* background-color: red; */
+    background-color: rgba(255, 0, 0, 0.5);
+    margin: 20px;
+    padding: 5px;
+}
+
+.formDiv {
+    margin: 20px;
+    padding: 5px;
+    background-color: bisque;
+    height: 30px;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+}
+
+button {
+    margin: 5px;
+    padding: 5px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #ff9d29;
+}
+
+#userInputChat {
+    padding: 5px;
+    margin: 20px;
+    border-radius: 2px;
+}
