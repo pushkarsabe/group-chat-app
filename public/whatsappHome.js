@@ -72,6 +72,15 @@ function decodeJwt(token) {
     return { header, payload };
 }//decodeJwt
 
+function checkGroupSelected(actionName) {
+    const groupId = localStorage.getItem('groupId');
+    if (!groupId) {
+        showMessage('failure', `Please select a group or chat first to ${actionName}.`);
+        return false;
+    }
+    return true;
+}//checkGroupSelected
+
 function filterContacts(contactList, searchValue, appendContactContainer) {
     console.log('inside filterContacts:');
     console.log("contactList  = " + JSON.stringify(contactList));
@@ -580,13 +589,22 @@ async function loadChatPage(groupId, groupUserID, groupName, groupUserNames) {
 
 async function loadRemoveContactPopup() {
     console.log('inside loadRemoveContactPopup:');
-    // Show the remove contact popup
-    document.getElementById('removeContactPopup').style.display = 'block';
-    document.getElementById('overlay').style.display = 'block';
+
+    if (!checkGroupSelected('remove contacts')) return;
 
     let ADMIN = localStorage.getItem("ADMIN");
     let groupId = localStorage.getItem('groupId');
     let groupUserID = localStorage.getItem('groupUserID');
+    let groupName = localStorage.getItem('groupName');
+
+    if (groupName === 'q4X7nA6F8sT9mK3jY0dWvR1pZ5cG2bH') {
+        showMessage('failure', "Can't remove contacts without selecting the group or user first.");
+        return;
+    }
+    // Show the remove contact popup
+    document.getElementById('removeContactPopup').style.display = 'block';
+    document.getElementById('overlay').style.display = 'block';
+
     //get ADMIN value from LS, if the user is admin or not
     console.log("ADMIN  = " + ADMIN);
     if (ADMIN == 'true') {
@@ -718,15 +736,26 @@ async function removeSelectedContacts() {
 
 async function loadAddContactPopup() {
     console.log('inside loadAddContactPopup:');
-    // Show the remove contact popup
-    document.getElementById('addContactPopup').style.display = 'block';
-    document.getElementById('overlay').style.display = 'block';
+
+    if (!checkGroupSelected('add contacts')) return;
+
 
     let ADMIN = localStorage.getItem("ADMIN");
     let groupId = localStorage.getItem('groupId');
     let groupUserID = localStorage.getItem('groupUserID');
+    let groupName = localStorage.getItem('groupName');
     console.log("groupId  = " + groupId);
     console.log("groupUserID  = " + groupUserID);
+    console.log("groupName  = " + groupName);
+
+    if (groupName === 'q4X7nA6F8sT9mK3jY0dWvR1pZ5cG2bH') {
+        showMessage('failure', "Can't add new contact before selecting a group or user first.");
+        return;
+    }
+
+    // Show the remove contact popup
+    document.getElementById('addContactPopup').style.display = 'block';
+    document.getElementById('overlay').style.display = 'block';
 
     //if user is not a admin of the group then he should not be able to add members inside group
     if (ADMIN == 'true') {
@@ -856,17 +885,26 @@ function closeAddContactPopup() {
 
 async function loadAddAdminPopup() {
     console.log('inside loadAddAdminPopup');
-    // Show the remove contact popup
-    document.getElementById('addAdminPopup').style.display = 'block';
-    document.getElementById('overlay').style.display = 'block';
+    if (!checkGroupSelected('promote an admin')) return;
 
     let ADMIN = localStorage.getItem("ADMIN");
     let groupId = localStorage.getItem('groupId');
     let groupUserID = localStorage.getItem('groupUserID');
     let userid = localStorage.getItem('userid');
+    let groupName = localStorage.getItem('groupName');
     console.log("userid  = " + userid);
     console.log("groupId  = " + groupId);
     console.log("groupUserID  = " + groupUserID);
+    console.log("groupName  = " + groupName);
+
+    if (groupName === 'q4X7nA6F8sT9mK3jY0dWvR1pZ5cG2bH') {
+        showMessage('failure', "Can't make admin before selecting a group or user first.");
+        return;
+    }
+
+    // Show the remove contact popup
+    document.getElementById('addAdminPopup').style.display = 'block';
+    document.getElementById('overlay').style.display = 'block';
 
     //if the user is admin of the group then only he can promote to admin
     if (ADMIN == 'true') {
@@ -1000,9 +1038,16 @@ async function deleteGroup() {
     console.log('inside deleteGroup...');
     let groupId = localStorage.getItem('groupId');
     let groupUserID = localStorage.getItem('groupUserID');
+    let groupName = localStorage.getItem('groupName');
     let ADMIN = localStorage.getItem("ADMIN");
     console.log("groupId  = " + groupId);
+    console.log("groupName  = " + groupName);
     console.log("ADMIN  = " + ADMIN);
+
+    if (groupName === 'q4X7nA6F8sT9mK3jY0dWvR1pZ5cG2bH') {
+        showMessage('failure', "You can  not delete a group before selecting a group or user first.");
+        return;
+    }
 
     if (ADMIN === 'true') {
         let token = localStorage.getItem('token');
@@ -1030,6 +1075,11 @@ async function deleteGroup() {
 
                 if (response.data.message === "Data removed") {
                     showMessage('success', 'Group removed successfully');
+
+                    // first clear the existing list of groups and users
+                    document.getElementById('groupList').innerHTML = '';
+                    document.getElementById('singleUserList').innerHTML = '';
+
                     //fetch the new records after deleting a group and load the fresh data
                     const res = await axios.get(`http://${HOST}:3000/groups/get-data`, {
                         headers: {
