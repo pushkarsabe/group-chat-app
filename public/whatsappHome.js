@@ -412,6 +412,15 @@ window.document.addEventListener('DOMContentLoaded', async () => {
     console.log('inside DOMContentLoaded...');
     let token = localStorage.getItem('token');
     console.log('token:', token);
+
+    if (!token) {
+        alert("Token not found. Please log in.");
+        setTimeout(() => {
+            window.location.href = "login.html";
+        }, 50);
+        return;
+    }
+
     const { payload } = decodeJwt(token);
     console.log('Payload:', payload);
     console.log('userid = ', payload.userid);
@@ -423,10 +432,6 @@ window.document.addEventListener('DOMContentLoaded', async () => {
     else
         localStorage.setItem('userid', payload.userid);
 
-    if (!token) {
-        alert("Token not found. Please log in.");
-        return;
-    }
     try {
         const res = await axios.get(`http://${HOST}:3000/groups/get-data`, {
             headers: {
@@ -1025,6 +1030,16 @@ async function deleteGroup() {
 
                 if (response.data.message === "Data removed") {
                     showMessage('success', 'Group removed successfully');
+                    //fetch the new records after deleting a group and load the fresh data
+                    const res = await axios.get(`http://${HOST}:3000/groups/get-data`, {
+                        headers: {
+                            "Authorization": token
+                        }
+                    });
+                    console.log("AFTER deleting group res  = " + res);
+                    for (let i = 0; i < res.data.allGroupData.length; i++) {
+                        printallGroupDataOnFrontend(res.data.allGroupData[i]);
+                    }
                 }
                 else
                     console.log("Group not deleted");
