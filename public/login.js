@@ -1,5 +1,6 @@
 //local variables
-const URL = 'http://localhost:3000';
+// const URL = 'http://localhost:3000';
+const URL = 'https://group-chat-app-qxzo.onrender.com';
 console.log('login.js loaded');
 
 document.getElementById('loginForm').addEventListener('submit', function (event) {
