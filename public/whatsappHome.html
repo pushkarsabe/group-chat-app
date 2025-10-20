@@ -7,26 +7,24 @@
     <title>WhatsApp Home Page</title>
     <link rel="stylesheet" href="whatsappHome.css">
     <link rel="shortcut icon" href="#">
-    <!-- <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script> -->
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
 </head>
 
 
 <body>
-    <header>
-        <h2>WhatsApp</h2>
-        <div>
-            <button class="support" onclick="location.href='support.html'">Contact Us</button>
-        </div>
+<header>
+    <h2>WhatsApp</h2>
+    <div class="header-actions"> <button class="support" onclick="location.href='support.html'">Contact Us</button>
+        <button id="logoutBtn" class="logout-btn">Logout</button> </div>
 
-        <div>
-            <div class="time">
-            </div>
+    <div>
+        <div class="time">
         </div>
+    </div>
 
-        <div class="addImage">
-        </div>
-    </header>
+    <div class="addImage">
+    </div>
+</header>
 
     <div class="main-container">
         <div class="group-list">

@@ -29,6 +29,34 @@ header {
     padding: 0 180px;
 }
 
+.logout-btn {
+    padding: 5px 10px;
+    margin: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    border: 1px solid #c0392b;
+    /* Dark red border */
+    background-color: #e74c3c;
+    /* Red background */
+    color: white;
+    font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+.logout-btn:hover {
+    background-color: #c0392b;
+    /* Darker red on hover */
+    transform: translateY(-1px);
+    /* Slight lift on hover */
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    /* Space between Contact Us and Logout */
+}
+
 .support {
     padding: 5px;
     margin: 5px;

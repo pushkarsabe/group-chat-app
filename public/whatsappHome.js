@@ -2,8 +2,8 @@ const contactList = document.getElementById('contactList');
 const singleUserList = document.getElementById('singleUserList');
 document.getElementById('chatForm').addEventListener('submit', submitChat);
 let lastChatID = 0;
-// const URL = 'http://localhost:3000';
-const URL = 'https://group-chat-app-qxzo.onrender.com';
+const URL = 'http://localhost:3000';
+// const URL = 'https://group-chat-app-qxzo.onrender.com';
 
 //load create new popup and close popup
 document.getElementById('loadPopupbutton').addEventListener('click', loadCreateGroupPopupAndGetData);
@@ -32,6 +32,35 @@ document.getElementById('promoteToAdmin').addEventListener('click', promoteToAdm
 
 //delete group or chat
 document.getElementById('deleteGroup').addEventListener('click', deleteGroup);
+
+//to log out from home 
+document.getElementById('logoutBtn').addEventListener('click', logout);
+
+// --- NEW LOGOUT FUNCTION ---
+function logout() {
+    console.log('User logging out...');
+
+    localStorage.removeItem('token');
+    localStorage.removeItem('userid');
+    localStorage.removeItem('groupId');
+    localStorage.removeItem('groupUserID');
+    localStorage.removeItem('groupName');
+    localStorage.removeItem('groupUserNames');
+    localStorage.removeItem('ADMIN');
+
+    // 2. Disconnect socket (if connected)
+    if (typeof socket !== 'undefined' && socket.connected) {
+        socket.disconnect();
+    }
+
+    // 3. Inform the user and redirect
+    showMessage('info', 'Logging out...');
+
+    setTimeout(() => {
+        // Redirect to the login page
+        window.location.href = './login.html';
+    }, 500);
+}
 
 function showMessage(type, message) {
     const existing = document.querySelector('.custom-toast');
