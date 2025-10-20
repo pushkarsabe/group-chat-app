@@ -9,7 +9,7 @@ const authenticate = (req, res, next) => {
         if (token == undefined) {
             return res.status(401).json({ message: 'User opened home page directly without login' });
         }
-        const user = jwt.verify(token, 'secretkey');
+        const user = jwt.verify(token, process.env.JWT_SECRET);
         console.log('userid = ' + user.userid);
 
         User.findByPk(user.userid).then(user => {

@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const http = require('http');
 const sequelize = require('./util/database');
-const cron = require('./cronJob');
+// const cron = require('./cronJob');
 
 const app = express();
 app.use(cors());
