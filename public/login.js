@@ -50,16 +50,65 @@ async function submitData() {
             password: password
         }
 
-        try {
-            // Note: You must have imported axios via a script tag in your HTML for this to work.
-            const response = await axios.post(`${URL}/user/login`, obj);
-            console.log('response data = ' + JSON.stringify(response.data));
+        const apiUrl = URL + '/user/login';
 
-            // Checking the response structure here for safety
-            if (response.data && response.data.userDetails && response.data.token) {
-                console.log('email = ' + response.data.userDetails.email);
-                console.log('token = ' + response.data.token);
-                localStorage.setItem('token', response.data.token);
+        try {
+            // Using native fetch API
+            const fetchOptions = {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(obj)
+            };
+
+            const response = await fetch(apiUrl, fetchOptions);
+
+            // 1. Check for non-OK HTTP status codes (4xx, 5xx)
+            if (!response.ok) {
+                // Try to parse the response data to get the server's error message
+                let errorData;
+                try {
+                    errorData = await response.json();
+                } catch (e) {
+                    errorData = { message: 'Failed to parse server error response.' };
+                }
+
+                let errorMessage = 'An unexpected error occurred';
+
+                // Map specific status codes to user-friendly messages
+                switch (response.status) {
+                    case 401:
+                        errorMessage = 'Invalid credentials'; // Password mismatch
+                        break;
+                    case 404:
+                        errorMessage = 'User not found'; // User does not exist
+                        break;
+                    case 403:
+                        errorMessage = 'Access forbidden';
+                        break;
+                    case 500:
+                        errorMessage = 'Server error (500)';
+                        break;
+                    default:
+                        // Use the message parsed from the body or generic server error
+                        errorMessage = errorData.message || `Server error (Status: ${response.status})`;
+                        break;
+                }
+
+                // Throwing an error here ensures the catch block is executed
+                throw new Error(errorMessage);
+            }
+
+            // 2. Process successful response body
+            const data = await response.json();
+
+            console.log('response data = ' + JSON.stringify(data));
+
+            if (data && data.userDetails && data.token) {
+                console.log('email = ' + data.userDetails.email);
+                console.log('token = ' + data.token);
+                localStorage.setItem('token', data.token);
 
                 await showMessage('Email and Password verified', 'succesMessage');
 
@@ -72,32 +121,16 @@ async function submitData() {
             }
         }
         catch (error) {
-            // *** IMPORTANT: LOG THE FULL ERROR OBJECT HERE ***
             console.error('Login Request Failed:', error);
 
-            let errorMessage = 'An unexpected error occurred'; // Default failure message
-
-            if (error.response) {
-                switch (error.response.status) {
-                    case 401:
-                        errorMessage = 'Invalid credentials';
-                        break;
-                    case 403:
-                        errorMessage = 'Access forbidden';
-                        break;
-                    case 404:
-                        errorMessage = 'User not found';
-                        break;
-                    default:
-                        // Use server message if available, otherwise 'Server error'
-                        errorMessage = error.response.data?.message || 'Server error (Status: ' + error.response.status + ')';
-                }
-            } else if (error.request) {
-                // The request was made but no response was received (server down/unreachable)
-                errorMessage = 'No response from server (Check backend)';
+            let errorMessage;
+            if (error.message.includes('Failed to fetch')) {
+                errorMessage = 'No response from server (Check backend is running on port 3000)';
+            } else {
+                // Uses the specific error message thrown above (e.g., 'Invalid credentials', 'User not found')
+                errorMessage = error.message || 'An unexpected error occurred';
             }
 
-            // If none of the above, it keeps the default: 'An unexpected error occurred'
             await showMessage(errorMessage, 'failureMessage');
         }
     }

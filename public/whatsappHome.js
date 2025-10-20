@@ -55,7 +55,7 @@ function showMessage(type, message) {
 
 function decodeJwt(token) {
     console.log('inside decodeJwt...');
-    console.log("token  = " + token);
+    console.log("token = " + token);
 
     const parts = token.split(".");
 
@@ -82,7 +82,7 @@ function checkGroupSelected(actionName) {
 
 function filterContacts(contactList, searchValue, appendContactContainer) {
     console.log('inside filterContacts:');
-    console.log("contactList  = " + JSON.stringify(contactList));
+    console.log("contactList = " + JSON.stringify(contactList));
 
     const filteredContacts = contactList.filter(contact =>
         contact.name.toLowerCase().includes(searchValue.toLowerCase()) ||
@@ -139,23 +139,27 @@ async function getAllUserData(ListContainer) {
         return;
     }
     try {
-        const response = await axios.get(`${URL}/user/user-data`, {
+        const response = await fetch(`${URL}/user/user-data`, {
+            method: 'GET',
             headers: {
                 "Authorization": token
             }
         });
-        let chatData = response.data.allUserData;
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        let chatData = data.allUserData;
         localStorage.setItem('chatData', JSON.stringify(chatData));
-        console.log("chatData  = " + JSON.stringify(chatData));
-
-        // displayContacts(chatData, ListContainer);
-
+        console.log("chatData = " + JSON.stringify(chatData));
 
         // we will filter the search only for single user chat and not for group popup
         if (ListContainer === singleUserContactList) {
             console.log(" single User Contact List");
             let filteredSingleUsers = chatData.filter(chat => chat.id != userid);
-            console.log("filteredSingleUsers  = " + JSON.stringify(filteredSingleUsers));
+            console.log("filteredSingleUsers = " + JSON.stringify(filteredSingleUsers));
 
             displayContacts(filteredSingleUsers, ListContainer);
 
@@ -174,6 +178,7 @@ async function getAllUserData(ListContainer) {
     }
     catch (err) {
         console.log("loadCreateGroupPopupAndGetData error = " + err);
+        showMessage('failure', 'Failed to load user data.');
     }
 }//getAllUserData
 
@@ -195,16 +200,16 @@ async function createSingleUserGroup() {
     console.log('inside createSingleUserGroup...');
     const chatData = JSON.parse(localStorage.getItem('chatData'));
     let userid = localStorage.getItem('userid');
-    console.log("userid  = " + userid);
-    console.log("chatData  = " + JSON.stringify(chatData));
+    console.log("userid = " + userid);
+    console.log("chatData = " + JSON.stringify(chatData));
 
     const selectedContacts = [];
     const checkboxes = document.querySelectorAll("#singleUserContactList input[type ='checkbox']:checked");
-    console.log("checkboxes  = " + JSON.stringify(checkboxes));
+    console.log("checkboxes = " + JSON.stringify(checkboxes));
 
     checkboxes.forEach(checkbox => {
         const contactId = checkbox.id;
-        console.log("contactId  = " + contactId);
+        console.log("contactId = " + contactId);
         const contact = chatData.find(c => c.id === Number(contactId)); // Assuming chatData is available
 
         if (contact) {
@@ -215,20 +220,20 @@ async function createSingleUserGroup() {
             });
         }
     });
-    console.log("selectedContacts  = " + JSON.stringify(selectedContacts));
+    console.log("selectedContacts = " + JSON.stringify(selectedContacts));
 
     if (selectedContacts.length > 0) {
         //only one contact is needed for single user chat
         if (selectedContacts.length == 1) {
-            console.log("selectedContacts  = " + JSON.stringify(selectedContacts));
+            console.log("selectedContacts = " + JSON.stringify(selectedContacts));
             let groupName = 'q4X7nA6F8sT9mK3jY0dWvR1pZ5cG2bH';
             let groupUserNames = selectedContacts[0].name;
             let groupUserIDS = selectedContacts[0].id;
             let groupPhoneNumbers = selectedContacts[0].phoneNumber;
-            console.log("groupName  = " + groupName);
-            console.log("groupUserNames  = " + groupUserNames);
-            console.log("groupUserIDS  = " + groupUserIDS);
-            console.log("groupPhoneNumbers  = " + groupPhoneNumbers);
+            console.log("groupName = " + groupName);
+            console.log("groupUserNames = " + groupUserNames);
+            console.log("groupUserIDS = " + groupUserIDS);
+            console.log("groupPhoneNumbers = " + groupPhoneNumbers);
             const obj = {
                 groupName: groupName,
                 groupUserNames: groupUserNames,
@@ -238,23 +243,37 @@ async function createSingleUserGroup() {
 
             let token = localStorage.getItem('token');
             if (!token) {
-                // alert("Token not found. Please log in.");
                 showMessage('failure', 'Token not found. Please log in.');
                 return;
             }
             try {
-                const res = await axios.post(`${URL}/groups/save-data`, obj, {
+                const response = await fetch(`${URL}/groups/save-data`, {
+                    method: 'POST',
                     headers: {
-                        "Authorization": token
-                    }
+                        "Authorization": token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(obj)
                 });
-                console.log("res  = " + JSON.stringify(res));
-                console.log('userId = ' + res.data.submittedGroupData.userId);
-                const data = res.data.submittedGroupData;
-                console.log("data  = " + JSON.stringify(data));
+
+                let res;
+                try {
+                    res = await response.json();
+                } catch (e) {
+                    throw new Error(response.ok ? "Success, but failed to parse response." : `Server error (Status: ${response.status})`);
+                }
+
+                if (!response.ok) {
+                    throw new Error(res.message || res.error || `Server responded with status ${response.status}`);
+                }
+
+                console.log("res = " + JSON.stringify(res));
+                console.log('userId = ' + res.submittedGroupData.userId);
+                const data = res.submittedGroupData;
+                console.log("data = " + JSON.stringify(data));
 
                 const li = document.createElement('li');
-                li.appendChild(document.createTextNode(`${res.data.submittedGroupData.groupUserNames}`));
+                li.appendChild(document.createTextNode(`${res.submittedGroupData.groupUserNames}`));
                 li.style.cursor = "pointer";
                 li.addEventListener('click', () => {
                     loadChatPage(data.id, data.groupUserIDS, data.groupName, data.groupUserNames);
@@ -262,25 +281,15 @@ async function createSingleUserGroup() {
                 singleUserList.appendChild(li);
 
                 //save the data of the user as admin 
-                saveAdminData(res.data.submittedGroupData.userId, res.data.submittedGroupData.id);
+                saveAdminData(res.submittedGroupData.userId, res.submittedGroupData.id);
 
                 closeSingleUserPopup();
 
-                showMessage('success', 'Group created successfully!');
+                showMessage('success', 'Chat created successfully!');
 
             } catch (err) {
-                console.log("createSingleUserGroup error = " + err);
-                if (err.response) {
-                    console.log("Server responded with an error: ", err.response.data);
-                    alert(`Error: ${err.response.data.message}`);
-                }
-                else if (err.request) {
-                    console.log("No response received: ", err.request);
-                    alert('No response from the server. Please check your network connection.');
-                }
-                else {
-                    console.log("Error in setting up request: ", err.message);
-                }
+                console.log("createSingleUserGroup error = " + err.message);
+                showMessage('failure', `Error: ${err.message}`);
             }
         }
         else {
@@ -288,7 +297,6 @@ async function createSingleUserGroup() {
         }
     }
     else {
-        // alert('No contact selected');
         showMessage('failure', 'No contact selected.');
     }
 
@@ -302,11 +310,11 @@ async function createGroup() {
     localStorage.setItem('chatData', JSON.stringify(chatData));
     const selectedContacts = [];
     const checkboxes = document.querySelectorAll("#contactList input[type ='checkbox']:checked");
-    console.log("checkboxes  = " + JSON.stringify(checkboxes));
+    console.log("checkboxes = " + JSON.stringify(checkboxes));
 
     checkboxes.forEach(checkbox => {
         const contactId = checkbox.id;
-        console.log("contactId  = " + contactId);
+        console.log("contactId = " + contactId);
         const contact = chatData.find(c => c.id === Number(contactId)); // Assuming chatData is available
 
         if (contact) {
@@ -317,7 +325,7 @@ async function createGroup() {
             });
         }
     });
-    console.log("selectedContacts  = " + JSON.stringify(selectedContacts));
+    console.log("selectedContacts = " + JSON.stringify(selectedContacts));
 
     //to check if the user altleast selected one user
     if (groupName && selectedContacts.length > 0) {
@@ -330,17 +338,17 @@ async function createGroup() {
             groupPhoneNumbers += selectedContacts[i].phoneNumber + ",";
         }
         console.log('before trailing...');
-        console.log("groupName  = " + groupName);
-        console.log("groupUserNames  = " + groupUserNames);
-        console.log("groupUserIDS  = " + groupUserIDS);
-        console.log("groupPhoneNumbers  = " + groupPhoneNumbers);
+        console.log("groupName = " + groupName);
+        console.log("groupUserNames = " + groupUserNames);
+        console.log("groupUserIDS = " + groupUserIDS);
+        console.log("groupPhoneNumbers = " + groupPhoneNumbers);
         groupUserNames = groupUserNames.slice(0, -1);
         groupUserIDS = groupUserIDS.slice(0, -1);
         groupPhoneNumbers = groupPhoneNumbers.slice(0, -1);
         console.log('after trailing...');
-        console.log("groupUserNames  = " + groupUserNames);
-        console.log("groupUserIDS  = " + groupUserIDS);
-        console.log("groupPhoneNumbers  = " + groupPhoneNumbers);
+        console.log("groupUserNames = " + groupUserNames);
+        console.log("groupUserIDS = " + groupUserIDS);
+        console.log("groupPhoneNumbers = " + groupPhoneNumbers);
 
         const obj = {
             groupName: groupName,
@@ -355,23 +363,40 @@ async function createGroup() {
             return;
         }
         try {
-            const res = await axios.post(`${URL}/groups/save-data`, obj, {
+            const response = await fetch(`${URL}/groups/save-data`, {
+                method: 'POST',
                 headers: {
-                    "Authorization": token
-                }
+                    "Authorization": token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(obj)
             });
-            console.log("res  = " + JSON.stringify(res));
-            console.log('userid = ' + res.data.submittedGroupData.userid);
+
+            let res;
+            try {
+                res = await response.json();
+            } catch (e) {
+                throw new Error(response.ok ? "Success, but failed to parse response." : `Server error (Status: ${response.status})`);
+            }
+
+            if (!response.ok) {
+                throw new Error(res.message || res.error || `Server responded with status ${response.status}`);
+            }
+
+            console.log("res = " + JSON.stringify(res));
+            console.log('userid = ' + res.submittedGroupData.userId);
+
+            const data = res.submittedGroupData;
 
             const li = document.createElement('li');
-            li.appendChild(document.createTextNode(`${groupName} : ${res.data.submittedGroupData.groupUserNames}`));
+            li.appendChild(document.createTextNode(`${groupName} : ${data.groupUserNames}`));
             li.style.cursor = "pointer";
             li.addEventListener('click', () => {
                 loadChatPage(data.id, data.groupUserIDS, data.groupName, data.groupUserNames);
             })
             groupList.appendChild(li);
 
-            saveAdminData(res.data.submittedGroupData.userId, res.data.submittedGroupData.id);
+            saveAdminData(data.userId, data.id);
 
             document.getElementById('groupName').value = "";
 
@@ -379,19 +404,19 @@ async function createGroup() {
 
             showMessage('success', 'Group created successfully!');
         } catch (err) {
-            console.log("createGrou pInBackend error = " + err);
+            console.log("createGrou pInBackend error = " + err.message);
+            showMessage('failure', `Error creating group: ${err.message}`);
         }
 
     } else {
-        // alert("Please enter a group name.");
-        showMessage("failure", "Please select at least one group.");
+        showMessage("failure", "Please enter a group name and select at least one contact.");
     }
 }//createGroup
 
 async function saveAdminData(groupAdminIDS, groupId) {
     console.log('inside saveAdminData...');
-    console.log("groupAdminIDS  = " + groupAdminIDS);
-    console.log("groupId  = " + groupId);
+    console.log("groupAdminIDS = " + groupAdminIDS);
+    console.log("groupId = " + groupId);
     let obj = {
         groupAdminIDS: groupAdminIDS,
         groupId: groupId
@@ -402,16 +427,30 @@ async function saveAdminData(groupAdminIDS, groupId) {
         return;
     }
     try {
-        const res = await axios.post(`${URL}/admin/save-admin`, obj, {
+        const response = await fetch(`${URL}/admin/save-admin`, {
+            method: 'POST',
             headers: {
-                "Authorization": token
-            }
+                "Authorization": token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(obj)
         });
-        console.log("res  = " + JSON.stringify(res));
-        // console.log('userid = ' + res.data.submittedGroupData.userid);
+
+        let res;
+        try {
+            res = await response.json();
+        } catch (e) {
+            throw new Error(response.ok ? "Success, but failed to parse response." : `Server error (Status: ${response.status})`);
+        }
+
+        if (!response.ok) {
+            throw new Error(res.message || res.error || `Server responded with status ${response.status}`);
+        }
+
+        console.log("res = " + JSON.stringify(res));
 
     } catch (err) {
-        console.log("saveAdminData error = " + err);
+        console.log("saveAdminData error = " + err.message);
     }
 
 }//saveAdminData
@@ -421,8 +460,10 @@ window.document.addEventListener('DOMContentLoaded', async () => {
     let token = localStorage.getItem('token');
     console.log('token:', token);
 
+    // Using alert is generally discouraged, replacing with showMessage toast
     if (!token) {
-        alert("Token not found. Please log in.");
+        // alert("Token not found. Please log in."); 
+        showMessage('failure', 'Session expired. Please log in.');
         setTimeout(() => {
             window.location.href = "login.html";
         }, 50);
@@ -441,14 +482,27 @@ window.document.addEventListener('DOMContentLoaded', async () => {
         localStorage.setItem('userid', payload.userid);
 
     try {
-        const res = await axios.get(`${URL}groups/get-data`, {
+        const response = await fetch(`${URL}/groups/get-data`, {
+            method: 'GET',
             headers: {
                 "Authorization": token
             }
         });
-        console.log("res  = " + JSON.stringify(res));
-        for (let i = 0; i < res.data.allGroupData.length; i++) {
-            printallGroupDataOnFrontend(res.data.allGroupData[i]);
+
+        let res;
+        try {
+            res = await response.json();
+        } catch (e) {
+            throw new Error(response.ok ? "Success, but failed to parse response." : `Server error (Status: ${response.status})`);
+        }
+
+        if (!response.ok) {
+            throw new Error(res.message || res.error || `Server responded with status ${response.status}`);
+        }
+
+        console.log("res = " + JSON.stringify(res));
+        for (let i = 0; i < res.allGroupData.length; i++) {
+            printallGroupDataOnFrontend(res.allGroupData[i]);
         }
         //inside printing the group data the functin is storing the values and you can use it here
         // Check if there's a previously selected group in localStorage
@@ -468,14 +522,14 @@ window.document.addEventListener('DOMContentLoaded', async () => {
         fileInput.addEventListener("change", handleFileUpload);
 
     } catch (err) {
-        console.log("createGroupInBackend error = " + err);
+        console.log("createGroupInBackend error = " + err.message);
     }
 
 })//DOMContentLoaded
 
 function printallGroupDataOnFrontend(data) {
     console.log('inside printallGroupDataOnFrontend...');
-    // console.log("data  = " + JSON.stringify(data));
+    // console.log("data = " + JSON.stringify(data));
 
     //only undeleted data is shown on frontend
     if (data.isDeleted == false) {
@@ -533,8 +587,9 @@ async function loadChatPage(groupId, groupUserID, groupName, groupUserNames) {
         console.log("Token not found. Please log in.");
         return;
     }
+    // Replacing alert with showMessage
     if (!groupId) {
-        alert("Please select a group first");
+        showMessage('failure', "Please select a group first");
     }
 
     if (socket) {
@@ -543,32 +598,59 @@ async function loadChatPage(groupId, groupUserID, groupName, groupUserNames) {
     }
 
     try {
-
-        const response = await axios.get(`${URL}/chat/get-chat?groupId=${groupId}`, {
+        // Fetch Chat Data
+        const chatResponse = await fetch(`${URL}/chat/get-chat?groupId=${groupId}`, {
+            method: 'GET',
             headers: {
                 "Authorization": token
             }
         });
-        // console.log('Chat data response:', response.data.allChatData);
 
-        response.data.allChatData.forEach(chat => {
+        let chatDataRes;
+        try {
+            chatDataRes = await chatResponse.json();
+        } catch (e) {
+            throw new Error(chatResponse.ok ? "Chat fetch success, failed to parse response." : `Chat fetch server error (Status: ${chatResponse.status})`);
+        }
+
+        if (!chatResponse.ok) {
+            throw new Error(chatDataRes.message || `Failed to fetch chats. Status: ${chatResponse.status}`);
+        }
+
+        // console.log('Chat data response:', chatDataRes.allChatData);
+
+        chatDataRes.allChatData.forEach(chat => {
             displayMessage(chat.chatName);
         });
 
-        const res = await axios.get(`${URL}/admin/get-admin?groupId=${groupId}`, {
+        // Fetch Admin Data
+        const adminResponse = await fetch(`${URL}/admin/get-admin?groupId=${groupId}`, {
+            method: 'GET',
             headers: {
                 "Authorization": token
             }
         });
-        console.log('admin data response:', res.data.allAdminData);
-        const adminDataObj = res.data.allAdminData[0];
+
+        let adminRes;
+        try {
+            adminRes = await adminResponse.json();
+        } catch (e) {
+            throw new Error(adminResponse.ok ? "Admin fetch success, failed to parse response." : `Admin fetch server error (Status: ${adminResponse.status})`);
+        }
+
+        if (!adminResponse.ok) {
+            throw new Error(adminRes.message || `Failed to fetch admins. Status: ${adminResponse.status}`);
+        }
+
+        console.log('admin data response:', adminRes.allAdminData);
+        const adminDataObj = adminRes.allAdminData[0];
 
         // Check if there is no data in the allAdminData array
-        if (!res.data.allAdminData || res.data.allAdminData.length === 0) {
+        if (!adminRes.allAdminData || adminRes.allAdminData.length === 0) {
             console.log("No admin data received");
+            localStorage.setItem("ADMIN", false);
         }
         else {
-
             let groupAdminIDS = adminDataObj.groupAdminIDS;
             console.log('groupAdminIDS = ' + groupAdminIDS);
             let userid = localStorage.getItem('userid');
@@ -587,7 +669,7 @@ async function loadChatPage(groupId, groupUserID, groupName, groupUserNames) {
         }
 
     } catch (err) {
-        console.log("Error fetching chat data:", err);
+        console.log("Error fetching chat/admin data:", err.message);
         chatContent.textContent = "Failed to load chat data.";
     }
 }//loadChatPage
@@ -603,7 +685,7 @@ async function loadRemoveContactPopup() {
     let groupName = localStorage.getItem('groupName');
 
     if (groupName === 'q4X7nA6F8sT9mK3jY0dWvR1pZ5cG2bH') {
-        showMessage('failure', "Can't remove contacts without selecting the group or user first.");
+        showMessage('failure', "Can't remove contacts from a private chat.");
         return;
     }
     // Show the remove contact popup
@@ -611,12 +693,12 @@ async function loadRemoveContactPopup() {
     document.getElementById('overlay').style.display = 'block';
 
     //get ADMIN value from LS, if the user is admin or not
-    console.log("ADMIN  = " + ADMIN);
+    console.log("ADMIN = " + ADMIN);
     if (ADMIN == 'true') {
         console.log("ADMIN is true");
 
-        console.log("groupId  = " + groupId);
-        console.log("groupUserID  = " + groupUserID);
+        console.log("groupId = " + groupId);
+        console.log("groupUserID = " + groupUserID);
         //when the user clicks on delete button without selecting any groups
         if (groupId == null && groupUserID == null) {
             showMessage('failure', 'Please select a group first to remove contact from group');
@@ -629,26 +711,36 @@ async function loadRemoveContactPopup() {
                 return;
             }
             else {
-
                 //if token is present then remove the user data from the array
                 let { payload } = decodeJwt(token);
                 let userid = payload.userid
-                console.log("userid  = ", userid);
+                console.log("userid = ", userid);
                 let arrayGroupUserID = groupUserID.split(",").map(num => parseInt(num)).filter(id => id != parseInt(userid));
-                console.log("arrayGroupUserID  = ", arrayGroupUserID);
+                console.log("arrayGroupUserID = ", arrayGroupUserID);
 
                 try {
-                    const res = await axios.get(`${URL}/user/user-data`, {
+                    const response = await fetch(`${URL}/user/user-data`, {
+                        method: 'GET',
                         headers: {
                             "Authorization": token
                         }
                     });
-                    // console.log("res  = " , JSON.stringify(res));
-                    let allUserData = res.data.allUserData;
-                    // console.log("allUserData  = " + JSON.stringify(allUserData));
+
+                    let res;
+                    try {
+                        res = await response.json();
+                    } catch (e) {
+                        throw new Error(response.ok ? "User data fetch success, failed to parse response." : `User data fetch server error (Status: ${response.status})`);
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(res.message || `Failed to fetch user data. Status: ${response.status}`);
+                    }
+
+                    let allUserData = res.allUserData;
                     //get only the usesr which are in the group
                     let filteredUsersToRemove = allUserData.filter(user => arrayGroupUserID.includes(user.id));
-                    console.log("filteredUsersToRemove  = ", JSON.stringify(filteredUsersToRemove));
+                    console.log("filteredUsersToRemove = ", JSON.stringify(filteredUsersToRemove));
                     // Store filtered users in localStorage
                     localStorage.setItem('filteredUsersToRemove', JSON.stringify(filteredUsersToRemove));
 
@@ -658,7 +750,8 @@ async function loadRemoveContactPopup() {
                     displayContacts(filteredUsersToRemove, contactList);
 
                 } catch (err) {
-                    console.log("Error loading contacts:", err);
+                    console.log("Error loading contacts:", err.message);
+                    showMessage('failure', `Error loading contacts: ${err.message}`);
                 }
             }
         }
@@ -680,15 +773,15 @@ async function removeSelectedContacts() {
     console.log('inside removeSelectedContacts...');
     let groupId = localStorage.getItem('groupId');
     let filteredUsersToRemove = JSON.parse(localStorage.getItem('filteredUsersToRemove'));
-    console.log("groupId  = " + groupId);
-    console.log("filteredUsersToRemove  = " + JSON.stringify(filteredUsersToRemove));
+    console.log("groupId = " + groupId);
+    console.log("filteredUsersToRemove = " + JSON.stringify(filteredUsersToRemove));
     const selectedContacts = [];
     const checkboxes = document.querySelectorAll("#removeContactList input[type ='checkbox']:checked");
-    console.log("checkboxes  = " + JSON.stringify(checkboxes));
+    console.log("checkboxes = " + JSON.stringify(checkboxes));
 
     checkboxes.forEach(checkbox => {
         const contactId = checkbox.id;
-        console.log("contactId  = " + contactId);
+        console.log("contactId = " + contactId);
         const contact = filteredUsersToRemove.find(c => c.id === Number(contactId));
 
         if (contact) {
@@ -699,7 +792,7 @@ async function removeSelectedContacts() {
             });
         }
     });
-    console.log("selectedContacts  = " + JSON.stringify(selectedContacts));
+    console.log("selectedContacts = " + JSON.stringify(selectedContacts));
     //check if the user has seletcted one contact
     if (selectedContacts.length <= 0) {
         showMessage('failure', 'Please select at least one user to remove');
@@ -714,25 +807,39 @@ async function removeSelectedContacts() {
 
             try {
                 //Send selectedContacts in the request body
-                const res = await axios.post(`${URL}/groups/delete-data`,
-                    {
+                const response = await fetch(`${URL}/groups/delete-data`, {
+                    method: 'POST',
+                    headers: {
+                        "Authorization": token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
                         groupId: groupId,
                         selectedContacts: selectedContacts
-                    },
-                    {
-                        headers: {
-                            "Authorization": token
-                        }
-                    });
-                console.log(res.data);
-                console.log("res  = " + res.data.message);
+                    })
+                });
+
+                let res;
+                try {
+                    res = await response.json();
+                } catch (e) {
+                    throw new Error(response.ok ? "Success, but failed to parse response." : `Server error (Status: ${response.status})`);
+                }
+
+                if (!response.ok) {
+                    throw new Error(res.message || `Failed to remove contacts. Status: ${response.status}`);
+                }
+
+                console.log(res);
+                console.log("res = " + res.message);
 
                 closeRemoveContactPopup();
 
                 showMessage('success', 'Selected contacts removed successfully');
 
             } catch (err) {
-                console.log("Error removing contacts:", err);
+                console.log("Error removing contacts:", err.message);
+                showMessage('failure', `Error removing contacts: ${err.message}`);
             }//try -catch block
         }
 
@@ -749,12 +856,12 @@ async function loadAddContactPopup() {
     let groupId = localStorage.getItem('groupId');
     let groupUserID = localStorage.getItem('groupUserID');
     let groupName = localStorage.getItem('groupName');
-    console.log("groupId  = " + groupId);
-    console.log("groupUserID  = " + groupUserID);
-    console.log("groupName  = " + groupName);
+    console.log("groupId = " + groupId);
+    console.log("groupUserID = " + groupUserID);
+    console.log("groupName = " + groupName);
 
     if (groupName === 'q4X7nA6F8sT9mK3jY0dWvR1pZ5cG2bH') {
-        showMessage('failure', "Can't add new contact before selecting a group or user first.");
+        showMessage('failure', "Can't add new contact to a private chat.");
         return;
     }
 
@@ -764,7 +871,7 @@ async function loadAddContactPopup() {
 
     //if user is not a admin of the group then he should not be able to add members inside group
     if (ADMIN == 'true') {
-        console.log("ADMIN  = " + ADMIN);
+        console.log("ADMIN = " + ADMIN);
         console.log("ADMIN is true");
 
         //when the user clicks on add button without selecting any groups
@@ -773,7 +880,7 @@ async function loadAddContactPopup() {
         }
         else {
             let arrayGroupUserID = groupUserID.split(",").map(num => parseInt(num));
-            console.log("arrayGroupUserID  = " + arrayGroupUserID);
+            console.log("arrayGroupUserID = " + arrayGroupUserID);
             let token = localStorage.getItem('token');
 
             if (!token && !groupId) {
@@ -781,18 +888,28 @@ async function loadAddContactPopup() {
                 return;
             } else {
                 try {
-                    const res = await axios.get(`${URL}/user/user-data`, {
+                    const response = await fetch(`${URL}/user/user-data`, {
+                        method: 'GET',
                         headers: {
                             "Authorization": token
                         }
                     });
-                    // console.log("res  = " + JSON.stringify(res));
-                    let allUserData = res.data.allUserData;
-                    // console.log("allUserData  = " + JSON.stringify(allUserData));   
+
+                    let res;
+                    try {
+                        res = await response.json();
+                    } catch (e) {
+                        throw new Error(response.ok ? "User data fetch success, failed to parse response." : `User data fetch server error (Status: ${response.status})`);
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(res.message || `Failed to fetch user data. Status: ${response.status}`);
+                    }
+
+                    let allUserData = res.allUserData;
                     //get only the usesr which are in the group
                     let filteredUsersToAdd = allUserData.filter(user => !arrayGroupUserID.includes(user.id));
-                    // console.log("filteredUsersToAdd  = " + JSON.stringify(filteredUsersToAdd));
-                    //aa it to the localstorage
+                    // Store filtered users in localStorage
                     localStorage.setItem('filteredUsersToAdd', JSON.stringify(filteredUsersToAdd));
 
                     const addContactList = document.getElementById('addContactList');
@@ -807,7 +924,8 @@ async function loadAddContactPopup() {
 
 
                 } catch (err) {
-                    console.log("Error loading contacts:", err);
+                    console.log("Error loading contacts:", err.message);
+                    showMessage('failure', `Error loading contacts: ${err.message}`);
                 }
             }
         }
@@ -824,18 +942,18 @@ async function addSelectedContacts() {
     console.log('inside addSelectedContacts...');
     let groupId = localStorage.getItem('groupId');
     let groupUserID = localStorage.getItem('groupUserID');
-    console.log("groupId  = " + groupId);
-    console.log("groupUserID  = " + groupUserID);
+    console.log("groupId = " + groupId);
+    console.log("groupUserID = " + groupUserID);
     let filteredUsersToAdd = JSON.parse(localStorage.getItem('filteredUsersToAdd'));
-    // console.log("filteredUsersToAdd  = " + JSON.stringify(filteredUsersToAdd));
+    // console.log("filteredUsersToAdd = " + JSON.stringify(filteredUsersToAdd));
     const selectedContacts = [];
     let checkbox = document.querySelectorAll("#addContactList input[type ='checkbox']:checked");
 
-    console.log("checkbox  = " + JSON.stringify(checkbox));
+    console.log("checkbox = " + JSON.stringify(checkbox));
 
     checkbox.forEach(checkbox => {
         const contactId = checkbox.id;
-        console.log("contactId  = " + contactId);
+        console.log("contactId = " + contactId);
         const contact = filteredUsersToAdd.find(c => c.id === Number(contactId));
         if (contact) {
             selectedContacts.push({
@@ -845,11 +963,11 @@ async function addSelectedContacts() {
             });
         }
     });
-    console.log("selectedContacts  = " + JSON.stringify(selectedContacts));
+    console.log("selectedContacts = " + JSON.stringify(selectedContacts));
 
     //when the user clicks on delete button without selecting any groups
     if (selectedContacts.length <= 0 || Object.keys(checkbox).length === 0) {
-        showMessage('failure', 'Please select a group first to remove contact from group');
+        showMessage('failure', 'Please select a contact to add to the group');
     }
     else {
         let token = localStorage.getItem('token');
@@ -859,24 +977,38 @@ async function addSelectedContacts() {
             return;
         } else {
             try {
-                const res = await axios.post(`${URL}/groups/update-data`,
-                    {
+                const response = await fetch(`${URL}/groups/update-data`, {
+                    method: 'POST',
+                    headers: {
+                        "Authorization": token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
                         groupId: groupId,
                         selectedContacts: selectedContacts
-                    },
-                    {
-                        headers: {
-                            "Authorization": token
-                        }
-                    });
-                console.log("res  = " + JSON.stringify(res));
-                console.log("res  = " + res.data.message);
+                    })
+                });
+
+                let res;
+                try {
+                    res = await response.json();
+                } catch (e) {
+                    throw new Error(response.ok ? "Success, but failed to parse response." : `Server error (Status: ${response.status})`);
+                }
+
+                if (!response.ok) {
+                    throw new Error(res.message || `Failed to add contacts. Status: ${response.status}`);
+                }
+
+                console.log("res = " + JSON.stringify(res));
+                console.log("res = " + res.message);
 
                 showMessage('success', 'Contacts added successfully to this group');
 
                 closeAddContactPopup();
             } catch (err) {
-                console.log("Error loading contacts:", err);
+                console.log("Error adding contacts:", err.message);
+                showMessage('failure', `Error adding contacts: ${err.message}`);
             }
         }
     }
@@ -897,13 +1029,13 @@ async function loadAddAdminPopup() {
     let groupUserID = localStorage.getItem('groupUserID');
     let userid = localStorage.getItem('userid');
     let groupName = localStorage.getItem('groupName');
-    console.log("userid  = " + userid);
-    console.log("groupId  = " + groupId);
-    console.log("groupUserID  = " + groupUserID);
-    console.log("groupName  = " + groupName);
+    console.log("userid = " + userid);
+    console.log("groupId = " + groupId);
+    console.log("groupUserID = " + groupUserID);
+    console.log("groupName = " + groupName);
 
     if (groupName === 'q4X7nA6F8sT9mK3jY0dWvR1pZ5cG2bH') {
-        showMessage('failure', "Can't make admin before selecting a group or user first.");
+        showMessage('failure', "Can't make admin in a private chat.");
         return;
     }
 
@@ -913,7 +1045,7 @@ async function loadAddAdminPopup() {
 
     //if the user is admin of the group then only he can promote to admin
     if (ADMIN == 'true') {
-        console.log("ADMIN  = " + ADMIN);
+        console.log("ADMIN = " + ADMIN);
 
         //when the user clicks on make admin button without selecting any groups
         if (groupId == null && groupUserID == null) {
@@ -922,11 +1054,11 @@ async function loadAddAdminPopup() {
 
             //remove the admins contact from popup, cause admin of the group can not prmote himself
             let arrayGroupUserID = groupUserID.split(",").map(num => parseInt(num));
-            console.log("arrayGroupUserID  = " + arrayGroupUserID);
+            console.log("arrayGroupUserID = " + arrayGroupUserID);
             integerUserId = Number(userid);
-            console.log("integerUserId  = " + typeof (integerUserId));
+            console.log("integerUserId = " + typeof (integerUserId));
             arrayGroupUserID = arrayGroupUserID.filter(id => id !== integerUserId);
-            console.log("arrayGroupUserID  = " + arrayGroupUserID);
+            console.log("arrayGroupUserID = " + arrayGroupUserID);
 
             let token = localStorage.getItem('token');
 
@@ -937,16 +1069,28 @@ async function loadAddAdminPopup() {
             else {
                 try {
 
-                    const res = await axios.get(`${URL}/user/user-data`, {
+                    const response = await fetch(`${URL}/user/user-data`, {
+                        method: 'GET',
                         headers: {
                             "Authorization": token
                         }
                     });
-                    // console.log("res  = " + JSON.stringify(res));
-                    let allUserData = res.data.allUserData;
+
+                    let res;
+                    try {
+                        res = await response.json();
+                    } catch (e) {
+                        throw new Error(response.ok ? "User data fetch success, failed to parse response." : `User data fetch server error (Status: ${response.status})`);
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(res.message || `Failed to fetch user data. Status: ${response.status}`);
+                    }
+
+                    let allUserData = res.allUserData;
                     //get only the usesr which are in the group
                     let filteredUsersTopromote = allUserData.filter(user => arrayGroupUserID.includes(user.id));
-                    console.log("filteredUsersTopromote  = " + JSON.stringify(filteredUsersTopromote));
+                    console.log("filteredUsersTopromote = " + JSON.stringify(filteredUsersTopromote));
                     // Store filtered users in localStorage
                     localStorage.setItem('filteredUsersTopromote', JSON.stringify(filteredUsersTopromote));
 
@@ -955,13 +1099,14 @@ async function loadAddAdminPopup() {
                     displayContacts(filteredUsersTopromote, contactList);
 
                 } catch (err) {
-                    console.log("Error loading contacts:", err);
+                    console.log("Error loading contacts:", err.message);
+                    showMessage('failure', `Error loading contacts: ${err.message}`);
                 }
             }
         }
     }
     else {
-        console.log("ADMIN  = " + ADMIN);
+        console.log("ADMIN = " + ADMIN);
         showMessage('failure', 'User is not an Admin in this group');
         closeaddAdminPopup();
     }
@@ -977,18 +1122,18 @@ async function promoteToAdmin() {
     console.log('inside promoteToAdmin...');
     let groupId = localStorage.getItem('groupId');
     let groupUserID = localStorage.getItem('groupUserID');
-    console.log("groupId  = " + groupId);
-    console.log("groupUserID  = " + groupUserID);
+    console.log("groupId = " + groupId);
+    console.log("groupUserID = " + groupUserID);
     let filteredUsersTopromote = JSON.parse(localStorage.getItem('filteredUsersTopromote'));
-    console.log("filteredUsersTopromote  = " + JSON.stringify(filteredUsersTopromote));
+    console.log("filteredUsersTopromote = " + JSON.stringify(filteredUsersTopromote));
     const selectedContacts = [];
     let checkbox = document.querySelectorAll("#addAdminList input[type ='checkbox']:checked");
 
-    console.log("checkbox  = " + JSON.stringify(checkbox));
+    console.log("checkbox = " + JSON.stringify(checkbox));
 
     checkbox.forEach(checkbox => {
         const contactId = checkbox.id;
-        console.log("contactId  = " + contactId);
+        console.log("contactId = " + contactId);
         const contact = filteredUsersTopromote.find(c => c.id === Number(contactId));
 
         if (contact) {
@@ -999,40 +1144,54 @@ async function promoteToAdmin() {
             });
         }
     });
-    console.log("selectedContacts  = " + JSON.stringify(selectedContacts));
+    console.log("selectedContacts = " + JSON.stringify(selectedContacts));
 
     //when the user clicks on delete button without selecting any groups
     if (selectedContacts.length <= 0) {
-        showMessage('failure', 'Please select a group first to promote to admin');
+        showMessage('failure', 'Please select a contact to promote to admin');
     }
     else {
 
         let token = localStorage.getItem('token');
 
         if (!token && !groupId) {
-            alert("Token not found. Please log in.");
+            showMessage('failure', "Token not found. Please log in.");
             return;
         } else {
             try {
-                const res = await axios.post(`${URL}/admin/add-admin`,
-                    {
+                const response = await fetch(`${URL}/admin/add-admin`, {
+                    method: 'POST',
+                    headers: {
+                        "Authorization": token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
                         groupId: groupId,
                         selectedContacts: selectedContacts
-                    },
-                    {
-                        headers: {
-                            "Authorization": token
-                        }
-                    });
-                console.log("res  = " + JSON.stringify(res));
-                console.log("message  = " + res.data.message);
-                console.log("addedAdminData  = " + res.data.addedAdminData);
+                    })
+                });
+
+                let res;
+                try {
+                    res = await response.json();
+                } catch (e) {
+                    throw new Error(response.ok ? "Success, but failed to parse response." : `Server error (Status: ${response.status})`);
+                }
+
+                if (!response.ok) {
+                    throw new Error(res.message || `Failed to promote admin. Status: ${response.status}`);
+                }
+
+                console.log("res = " + JSON.stringify(res));
+                console.log("message = " + res.message);
+                console.log("addedAdminData = " + res.addedAdminData);
 
                 closeaddAdminPopup();
                 showMessage('success', 'User promoted to admin successfully');
 
             } catch (err) {
-                console.log("Error loading contacts:", err);
+                console.log("Error promoting admin:", err.message);
+                showMessage('failure', `Error promoting admin: ${err.message}`);
             }
         }
     }
@@ -1045,12 +1204,12 @@ async function deleteGroup() {
     let groupUserID = localStorage.getItem('groupUserID');
     let groupName = localStorage.getItem('groupName');
     let ADMIN = localStorage.getItem("ADMIN");
-    console.log("groupId  = " + groupId);
-    console.log("groupName  = " + groupName);
-    console.log("ADMIN  = " + ADMIN);
+    console.log("groupId = " + groupId);
+    console.log("groupName = " + groupName);
+    console.log("ADMIN = " + ADMIN);
 
     if (groupName === 'q4X7nA6F8sT9mK3jY0dWvR1pZ5cG2bH') {
-        showMessage('failure', "You can  not delete a group before selecting a group or user first.");
+        showMessage('failure', "You can not delete a private chat.");
         return;
     }
 
@@ -1062,50 +1221,82 @@ async function deleteGroup() {
         }
         if (!groupId) {
             showMessage('failure', 'Please select a group first');
+            return;
         }
-        let userInput = confirm("Are you sure you want to remove this gruop ?");
-        if (userInput) {
+
+        // Custom modal replacement for confirm()
+        if (!window.confirm("Are you sure you want to remove this group?")) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${URL}/groups/update-group`, {
+                method: 'PUT',
+                headers: {
+                    "Authorization": token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ groupId: groupId })
+            });
+
+            let res;
             try {
-                const response = await axios.put(`${URL}/groups/update-group`,
-                    {
-                        groupId: groupId
-                    }
-                    , {
-                        headers: {
-                            "Authorization": token
-                        },
-
-                    });
-                console.log('delete response:', JSON.stringify(response));
-
-                if (response.data.message === "Data removed") {
-                    showMessage('success', 'Group removed successfully');
-
-                    // first clear the existing list of groups and users
-                    document.getElementById('groupList').innerHTML = '';
-                    document.getElementById('singleUserList').innerHTML = '';
-
-                    //fetch the new records after deleting a group and load the fresh data
-                    const res = await axios.get(`${URL}/groups/get-data`, {
-                        headers: {
-                            "Authorization": token
-                        }
-                    });
-                    console.log("AFTER deleting group res  = " + res);
-                    for (let i = 0; i < res.data.allGroupData.length; i++) {
-                        printallGroupDataOnFrontend(res.data.allGroupData[i]);
-                    }
-                }
-                else
-                    console.log("Group not deleted");
-
-            } catch (err) {
-                console.log("Error deleting group data:", err);
+                res = await response.json();
+            } catch (e) {
+                throw new Error(response.ok ? "Success, but failed to parse response." : `Server error (Status: ${response.status})`);
             }
+
+            if (!response.ok) {
+                throw new Error(res.message || `Failed to delete group. Status: ${response.status}`);
+            }
+
+            console.log('delete response:', JSON.stringify(res));
+
+            if (res.message === "Data removed") {
+                showMessage('success', 'Group removed successfully');
+
+                // first clear the existing list of groups and users
+                document.getElementById('groupList').innerHTML = '';
+                document.getElementById('singleUserList').innerHTML = '';
+
+                // Clear group selection locally after deletion
+                localStorage.removeItem('groupId');
+                localStorage.removeItem('groupUserID');
+                localStorage.removeItem('groupName');
+
+                //fetch the new records after deleting a group and load the fresh data
+                const updatedGroupsResponse = await fetch(`${URL}/groups/get-data`, {
+                    method: 'GET',
+                    headers: { "Authorization": token }
+                });
+
+                let updatedGroupsRes;
+                try {
+                    updatedGroupsRes = await updatedGroupsResponse.json();
+                } catch (e) {
+                    throw new Error(updatedGroupsResponse.ok ? "Groups fetch success, failed to parse response." : `Groups fetch server error (Status: ${updatedGroupsResponse.status})`);
+                }
+
+                if (!updatedGroupsResponse.ok) {
+                    throw new Error(updatedGroupsRes.message || `Failed to fetch updated groups. Status: ${updatedGroupsResponse.status}`);
+                }
+
+                console.log("AFTER deleting group res = " + updatedGroupsRes);
+                for (let i = 0; i < updatedGroupsRes.allGroupData.length; i++) {
+                    printallGroupDataOnFrontend(updatedGroupsRes.allGroupData[i]);
+                }
+            }
+            else {
+                console.log("Group not deleted");
+            }
+
+        } catch (err) {
+            console.log("Error deleting group data:", err.message);
+            showMessage('failure', `Error deleting group: ${err.message}`);
         }
     }
     else {
-        console.log("ADMIN  = " + ADMIN);
+        console.log("ADMIN = " + ADMIN);
         showMessage('failure', 'User is not a Admin in this group');
     }
 
@@ -1130,36 +1321,41 @@ async function submitChat(event) {
                 chat: userChat.value,
                 groupId: groupId
             }
-            if (groupId != NaN) {
+            if (!isNaN(groupId)) {
 
-                const response = await axios.post(`${URL}/chat/add-chat`, obj, {
+                const response = await fetch(`${URL}/chat/add-chat`, {
+                    method: 'POST',
                     headers: {
-                        "Authorization": token
-                    }
+                        "Authorization": token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(obj)
                 });
-                // Log the response for debugging
-                console.log('response = ' + JSON.stringify(response.data.chatData));
-                // response = {"id":8,"chatName":"hi","groupId":"5","signupId":3,"updatedAt":"2024-09-05T16:10:51.704Z","createdAt":"2024-09-05T16:10:51.704Z"}
 
-                displayMessage(response.data.chatData.chatName);
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    throw new Error(response.ok ? "Success, but failed to parse chat response." : `Server error (Status: ${response.status})`);
+                }
+
+                if (!response.ok) {
+                    throw new Error(data.message || `Failed to send chat. Status: ${response.status}`);
+                }
+
+                // Log the response for debugging
+                console.log('response = ' + JSON.stringify(data.chatData));
+
+                displayMessage(data.chatData.chatName);
                 //send the chat to backend socket
-                socket.emit('send-message', response.data.chatData.chatName);
+                socket.emit('send-message', data.chatData); // Send full object as per typical Socket.IO use
                 //update the id 
-                lastChatID = response.data.chatData.id;
+                lastChatID = data.chatData.id;
             }
         }
         catch (error) {
-            if (error.response) {
-                // Server responded with a status other than
-                console.error('Server Error:', error.response.data);
-                console.error('Status code:', error.response.status);
-            } else if (error.request) {
-                // Request was made but no response received
-                console.error('No response received:', error.request);
-            } else {
-                // Something happened in setting up the request
-                console.error('Error:', error.message);
-            }
+            console.error('Chat Submission Error:', error.message);
+            showMessage('failure', `Failed to send chat: ${error.message}`);
         }
     }
     userChat.value = "";
@@ -1200,11 +1396,15 @@ function displayMessage(chat) {
     chatContent.appendChild(chatItem);
 }//displayMessage
 
+// NOTE: io() is assumed to be globally available from the socket.io.min.js script tag in your HTML
 const socket = io(`${URL}`);
 // When a new message is received from the server
 socket.on('newMessage', function (message) {
     console.log('Received message:', message);
-    displayMessage(message.chatName);
+    // Assuming message is the full chat object, which has chatName property
+    if (message && message.chatName) {
+        displayMessage(message.chatName);
+    }
 });
 
 function handleFileUpload(e) {
@@ -1231,7 +1431,7 @@ function handleFileUpload(e) {
         uploadToCloudinary(file, "video");
     } else {
         console.error("Unsupported file type. Please select an image or video.");
-        alert("Unsupported file type. Please select an image or video.");
+        showMessage('failure', "Unsupported file type. Please select an image or video.");
     }
 }//handleFileUpload
 
@@ -1247,36 +1447,67 @@ function uploadToCloudinary(file, resourceType) {
     formData.append("upload_preset", "pi13acgd");
     const cloudinaryUrl = `https://api.cloudinary.com/v1_1/chatmultimedia/${resourceType}/upload`;
 
+    // Cloudinary upload using native fetch
     fetch(cloudinaryUrl, {
         method: "POST",
         body: formData,
     })
-        .then((response) => response.json())
+        .then((response) => {
+            if (!response.ok) {
+                return response.json().then(errorData => {
+                    throw new Error(errorData.error.message || `Cloudinary upload failed with status ${response.status}`);
+                });
+            }
+            return response.json();
+        })
         .then(async (data) => {
             console.log("Uploaded successfully:", data);
+
+            if (!data.secure_url) {
+                throw new Error("Cloudinary did not return a secure URL.");
+            }
+
             const obj = {
                 chat: data.secure_url,
                 groupId: groupId
             }
 
+            // Post chat URL to backend using native fetch
             try {
-                const response = await axios.post(`${URL}/chat/add-chat`, obj, {
+                const response = await fetch(`${URL}/chat/add-chat`, {
+                    method: 'POST',
                     headers: {
-                        "Authorization": token
-                    }
+                        "Authorization": token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(obj)
                 });
+
+                let chatDataRes;
+                try {
+                    chatDataRes = await response.json();
+                } catch (e) {
+                    throw new Error(response.ok ? "Success, failed to parse chat post response." : `Server error (Status: ${response.status})`);
+                }
+
+                if (!response.ok) {
+                    throw new Error(chatDataRes.message || `Failed to record chat. Status: ${response.status}`);
+                }
+
                 // Log the response for debugging
-                console.log('response = ' + JSON.stringify(response.data.chatData));
-                displayMessage(response.data.chatData.chatName);
-                socket.emit('send-message', response.data.chatData.chatName);
+                console.log('response = ' + JSON.stringify(chatDataRes.chatData));
+                displayMessage(chatDataRes.chatData.chatName);
+                socket.emit('send-message', chatDataRes.chatData);
+
             } catch (err) {
-                console.error('Error:', err);
+                console.error('Error posting chat to server:', err.message);
+                showMessage('failure', `Error sending file chat: ${err.message}`);
             }
 
         })
         .catch((error) => {
-            console.error("Error uploading file:", error);
-            alert("Error uploading file. Please try again.");
+            console.error("Error uploading file:", error.message);
+            showMessage('failure', `Error uploading file: ${error.message}. Please try again.`);
         });
 }//handleFileUpload
 

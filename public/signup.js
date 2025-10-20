@@ -14,6 +14,9 @@ document.getElementById('loginBtn').addEventListener('click', function () {
 //function to display the message
 function showMessage(msgText, className) {
     const msg = document.getElementById('message');
+    // Clear previous message
+    msg.innerHTML = '';
+
     const div = document.createElement('div');
     const textNode = document.createTextNode(msgText);
     div.appendChild(textNode);
@@ -22,7 +25,10 @@ function showMessage(msgText, className) {
 
     setTimeout(() => {
         msg.classList.remove(className);
-        msg.removeChild(div);
+        // Safely remove the child if it still exists
+        if (msg.contains(div)) {
+            msg.removeChild(div);
+        }
     }, 2000);
 }
 
@@ -37,9 +43,9 @@ async function submitData() {
     console.log('password = ' + password);
     console.log('phoneNumber = ' + phoneNumber);
 
-    if (name == "" || email == "" || phoneNumber == "" || password == "") {
+    if (name === "" || email === "" || phoneNumber === "" || password === "") {
         console.log('data is missing');
-        showMessage('failureMessage');
+        showMessage('Please fill all fields', 'failureMessage');
     } else {
         const obj = {
             name: name,
@@ -47,28 +53,63 @@ async function submitData() {
             password: password,
             phoneNumber: phoneNumber
         }
+
+        const apiUrl = URL + '/user/signup';
+
         try {
-            const response = await axios.post(`${URL}/user/signup`, obj);
+            const fetchOptions = {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(obj)
+            };
 
+            const response = await fetch(apiUrl, fetchOptions);
+
+            let data;
+            try {
+                data = await response.json();
+            } catch (e) {
+                // Handle cases where response body is empty or not valid JSON
+                data = { message: 'Failed to parse response.', newUserData: {} };
+            }
+
+            if (!response.ok) {
+                // Handle non-2xx status codes
+                console.error('Signup Request Failed (HTTP Error):', data);
+
+                let errorMessage;
+                if (response.status === 400 && data.message) {
+                    // Your backend returns 400 for 'Email already exists'
+                    errorMessage = data.message;
+                } else {
+                    errorMessage = data.message || `Server error (Status: ${response.status})`;
+                }
+
+                // Show the error message retrieved from the server or derived status
+                showMessage(errorMessage, 'failureMessage');
+                return; // Stop execution on error
+            }
+
+            // Handle successful 2xx response (e.g., 201 Created)
             console.log('data added');
-            console.log('response data = ' + JSON.stringify(response));
-            console.log('response name = ' + response.data.newUserData.name);
-            console.log('response email = ' + response.data.newUserData.email);
-            console.log('response phoneNumber = ' + response.data.newUserData.phoneNumber);
-            console.log('response password = ' + response.data.newUserData.password);
+            console.log('response data = ' + JSON.stringify(data));
+            console.log('response name = ' + data.newUserData.name);
+            console.log('response email = ' + data.newUserData.email);
 
-            showMessage(response.data.newUserData.message, 'succesMessage');
+            // Assuming your backend returns a message on success in the body:
+            const successMessage = data.message || 'New user successfully signed in';
+            showMessage(successMessage, 'succesMessage');
 
         } catch (error) {
-            // console.error('Error during form submission:', error);
-            //to handle the output response errors
-            if (error.response.status === 401) {
-                console.log('Error object:', error.response.data.error);
-                showMessage(error.response.data.error, 'failureMessage');
-            } else {
-                console.log('Unhandled error:', error);
-
+            // Handle network errors (e.g., server is down)
+            console.error('Network Error during signup:', error);
+            let errorMessage = 'An unexpected error occurred';
+            if (error.message.includes('Failed to fetch')) {
+                errorMessage = 'No response from server (Check backend)';
             }
+            showMessage(errorMessage, 'failureMessage');
         }
     }
     //to clear the input feilds after user clicks on submit
