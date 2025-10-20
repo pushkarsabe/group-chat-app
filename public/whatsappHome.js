@@ -2,8 +2,8 @@ const contactList = document.getElementById('contactList');
 const singleUserList = document.getElementById('singleUserList');
 document.getElementById('chatForm').addEventListener('submit', submitChat);
 let lastChatID = 0;
-const URL = 'http://localhost:3000';
-// const URL = 'https://group-chat-app-qxzo.onrender.com';
+// const URL = 'http://localhost:3000';
+const URL = 'https://group-chat-app-qxzo.onrender.com';
 
 //load create new popup and close popup
 document.getElementById('loadPopupbutton').addEventListener('click', loadCreateGroupPopupAndGetData);

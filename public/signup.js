@@ -1,5 +1,5 @@
-    const URL = 'http://localhost:3000';
-// const URL = 'https://group-chat-app-qxzo.onrender.com';
+    // const URL = 'http://localhost:3000';
+const URL = 'https://group-chat-app-qxzo.onrender.com';
 
 console.log('signup.js loaded');
 document.getElementById('signupForm').addEventListener('submit', function (event) {
