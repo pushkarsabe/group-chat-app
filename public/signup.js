@@ -1,5 +1,6 @@
 let HOST = 'localhost';
-// let HOST = '16.16.201.152';
+const URL = 'http://${HOST}:3000';
+
 
 console.log('signup.js loaded');
 document.getElementById('signupForm').addEventListener('submit', function (event) {
@@ -49,7 +50,7 @@ async function submitData() {
             phoneNumber: phoneNumber
         }
         try {
-            const response = await axios.post(`http://${HOST}:3000/user/signup`, obj);
+            const response = await axios.post(`${URL}/user/signup`, obj);
 
             console.log('data added');
             console.log('response data = ' + JSON.stringify(response));

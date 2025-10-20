@@ -4,6 +4,8 @@ const email = document.querySelector('#email');
 const phone = document.querySelector('#phone');
 const message = document.querySelector('#message');
 
+const URL = 'http://${HOST}:3000';
+
 contactForm.addEventListener("submit", onsubmit);
 
 

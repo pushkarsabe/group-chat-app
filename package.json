@@ -4,7 +4,7 @@
   "description": "to make group chat project",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon app.js",
+    "start": "node app.js",
     "start-server": "node app.js"
   },
   "author": "pushkar",

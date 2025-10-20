@@ -3,7 +3,7 @@ const singleUserList = document.getElementById('singleUserList');
 document.getElementById('chatForm').addEventListener('submit', submitChat);
 let lastChatID = 0;
 const HOST = 'localhost';
-// const HOST = '16.16.201.152';
+const URL = 'http://${HOST}:3000';
 
 //load create new popup and close popup
 document.getElementById('loadPopupbutton').addEventListener('click', loadCreateGroupPopupAndGetData);
@@ -140,7 +140,7 @@ async function getAllUserData(ListContainer) {
         return;
     }
     try {
-        const response = await axios.get(`http://${HOST}:3000/user/user-data`, {
+        const response = await axios.get(`${URL}/user/user-data`, {
             headers: {
                 "Authorization": token
             }
@@ -244,7 +244,7 @@ async function createSingleUserGroup() {
                 return;
             }
             try {
-                const res = await axios.post(`http://${HOST}:3000/groups/save-data`, obj, {
+                const res = await axios.post(`${URL}/groups/save-data`, obj, {
                     headers: {
                         "Authorization": token
                     }
@@ -356,7 +356,7 @@ async function createGroup() {
             return;
         }
         try {
-            const res = await axios.post(`http://${HOST}:3000/groups/save-data`, obj, {
+            const res = await axios.post(`${URL}/groups/save-data`, obj, {
                 headers: {
                     "Authorization": token
                 }
@@ -403,7 +403,7 @@ async function saveAdminData(groupAdminIDS, groupId) {
         return;
     }
     try {
-        const res = await axios.post(`http://${HOST}:3000/admin/save-admin`, obj, {
+        const res = await axios.post(`${URL}/admin/save-admin`, obj, {
             headers: {
                 "Authorization": token
             }
@@ -442,7 +442,7 @@ window.document.addEventListener('DOMContentLoaded', async () => {
         localStorage.setItem('userid', payload.userid);
 
     try {
-        const res = await axios.get(`http://${HOST}:3000/groups/get-data`, {
+        const res = await axios.get(`${URL}groups/get-data`, {
             headers: {
                 "Authorization": token
             }
@@ -542,10 +542,10 @@ async function loadChatPage(groupId, groupUserID, groupName, groupUserNames) {
         socket.emit('join-group', groupId); // Use the numeric groupId as the room name
         console.log(`Socket joined room: ${groupId}`);
     }
-    
+
     try {
 
-        const response = await axios.get(`http://${HOST}:3000/chat/get-chat?groupId=${groupId}`, {
+        const response = await axios.get(`${URL}/chat/get-chat?groupId=${groupId}`, {
             headers: {
                 "Authorization": token
             }
@@ -556,7 +556,7 @@ async function loadChatPage(groupId, groupUserID, groupName, groupUserNames) {
             displayMessage(chat.chatName);
         });
 
-        const res = await axios.get(`http://${HOST}:3000/admin/get-admin?groupId=${groupId}`, {
+        const res = await axios.get(`${URL}/admin/get-admin?groupId=${groupId}`, {
             headers: {
                 "Authorization": token
             }
@@ -639,7 +639,7 @@ async function loadRemoveContactPopup() {
                 console.log("arrayGroupUserID  = ", arrayGroupUserID);
 
                 try {
-                    const res = await axios.get(`http://${HOST}:3000/user/user-data`, {
+                    const res = await axios.get(`${URL}/user/user-data`, {
                         headers: {
                             "Authorization": token
                         }
@@ -715,7 +715,7 @@ async function removeSelectedContacts() {
 
             try {
                 //Send selectedContacts in the request body
-                const res = await axios.post(`http://${HOST}:3000/groups/delete-data`,
+                const res = await axios.post(`${URL}/groups/delete-data`,
                     {
                         groupId: groupId,
                         selectedContacts: selectedContacts
@@ -782,7 +782,7 @@ async function loadAddContactPopup() {
                 return;
             } else {
                 try {
-                    const res = await axios.get(`http://${HOST}:3000/user/user-data`, {
+                    const res = await axios.get(`${URL}/user/user-data`, {
                         headers: {
                             "Authorization": token
                         }
@@ -860,7 +860,7 @@ async function addSelectedContacts() {
             return;
         } else {
             try {
-                const res = await axios.post(`http://${HOST}:3000/groups/update-data`,
+                const res = await axios.post(`${URL}/groups/update-data`,
                     {
                         groupId: groupId,
                         selectedContacts: selectedContacts
@@ -938,7 +938,7 @@ async function loadAddAdminPopup() {
             else {
                 try {
 
-                    const res = await axios.get(`http://${HOST}:3000/user/user-data`, {
+                    const res = await axios.get(`${URL}/user/user-data`, {
                         headers: {
                             "Authorization": token
                         }
@@ -1015,7 +1015,7 @@ async function promoteToAdmin() {
             return;
         } else {
             try {
-                const res = await axios.post(`http://${HOST}:3000/admin/add-admin`,
+                const res = await axios.post(`${URL}/admin/add-admin`,
                     {
                         groupId: groupId,
                         selectedContacts: selectedContacts
@@ -1067,7 +1067,7 @@ async function deleteGroup() {
         let userInput = confirm("Are you sure you want to remove this gruop ?");
         if (userInput) {
             try {
-                const response = await axios.put(`http://${HOST}:3000/groups/update-group`,
+                const response = await axios.put(`${URL}/groups/update-group`,
                     {
                         groupId: groupId
                     }
@@ -1087,7 +1087,7 @@ async function deleteGroup() {
                     document.getElementById('singleUserList').innerHTML = '';
 
                     //fetch the new records after deleting a group and load the fresh data
-                    const res = await axios.get(`http://${HOST}:3000/groups/get-data`, {
+                    const res = await axios.get(`${URL}/groups/get-data`, {
                         headers: {
                             "Authorization": token
                         }
@@ -1133,7 +1133,7 @@ async function submitChat(event) {
             }
             if (groupId != NaN) {
 
-                const response = await axios.post(`http://${HOST}:3000/chat/add-chat`, obj, {
+                const response = await axios.post(`${URL}/chat/add-chat`, obj, {
                     headers: {
                         "Authorization": token
                     }
@@ -1201,7 +1201,7 @@ function displayMessage(chat) {
     chatContent.appendChild(chatItem);
 }//displayMessage
 
-const socket = io(`http://localhost:3000`);
+const socket = io(`${URL}`);
 // When a new message is received from the server
 socket.on('newMessage', function (message) {
     console.log('Received message:', message);
@@ -1261,7 +1261,7 @@ function uploadToCloudinary(file, resourceType) {
             }
 
             try {
-                const response = await axios.post(`http://${HOST}:3000/chat/add-chat`, obj, {
+                const response = await axios.post(`${URL}/chat/add-chat`, obj, {
                     headers: {
                         "Authorization": token
                     }

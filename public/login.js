@@ -1,6 +1,6 @@
 //local variables
 const HOST = 'localhost';
-// const HOST = '16.16.201.152';
+const URL = 'http://${HOST}:3000';
 console.log('login.js loaded');
 
 document.getElementById('loginForm').addEventListener('submit', function (event) {
@@ -51,7 +51,7 @@ async function submitData() {
         }
 
         try {
-            const response = await axios.post(`http://${HOST}:3000/user/login`, obj);
+            const response = await axios.post(`${URL}/user/login`, obj);
             console.log('response data = ' + JSON.stringify(response.data));
             //this will give the data inside the array
             console.log('email = ' + response.data.userDetails.email);
@@ -86,7 +86,7 @@ async function submitData() {
             } else if (error.request) {
                 errorMessage = 'No response from server';
             }
-            await showMessage(errorMessage, 'failureMessage');  
+            await showMessage(errorMessage, 'failureMessage');
         }
     }
 
