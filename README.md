@@ -1,7 +1,7 @@
 Group Chat App
 
 This is a real-time group chat application built with Node.js, Express, Sequelize, and Socket.io. It allows users to sign up, log in, create groups, chat with other users in real-time, and more.
-
+live url:https://group-chat-app-qxzo.onrender.com/login.html
 Features
 
     User Authentication: Secure user signup and login with password hashing (bcrypt) and JWT for authentication.
