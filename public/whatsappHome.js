@@ -2,8 +2,7 @@ const contactList = document.getElementById('contactList');
 const singleUserList = document.getElementById('singleUserList');
 document.getElementById('chatForm').addEventListener('submit', submitChat);
 let lastChatID = 0;
-const HOST = 'localhost';
-const URL = 'http://${HOST}:3000';
+const URL = 'http://localhost:3000';
 
 //load create new popup and close popup
 document.getElementById('loadPopupbutton').addEventListener('click', loadCreateGroupPopupAndGetData);

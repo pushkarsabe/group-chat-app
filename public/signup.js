@@ -1,6 +1,4 @@
-let HOST = 'localhost';
-const URL = 'http://${HOST}:3000';
-
+const URL = 'http://localhost:3000';
 
 console.log('signup.js loaded');
 document.getElementById('signupForm').addEventListener('submit', function (event) {

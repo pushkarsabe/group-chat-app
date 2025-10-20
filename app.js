@@ -21,6 +21,11 @@ const chatRoute = require('./routes/chat');
 const groupRoute = require('./routes/group');
 const adminRoute = require('./routes/admin');
 
+app.get('/', (req, res) => {
+    res.send("Hello there, this server is running well.");
+});
+
+
 //user signup and login
 app.use("/user", userRoute);
 
