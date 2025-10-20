@@ -4,7 +4,8 @@ const email = document.querySelector('#email');
 const phone = document.querySelector('#phone');
 const message = document.querySelector('#message');
 
-const URL = 'http://${HOST}:3000';
+// const URL = 'http://${HOST}:3000';
+const URL = 'https://group-chat-app-qxzo.onrender.com';
 
 contactForm.addEventListener("submit", onsubmit);
 

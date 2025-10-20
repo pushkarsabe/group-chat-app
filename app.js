@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const http = require('http');
 const sequelize = require('./util/database');
+const path = require('path');
 // const cron = require('./cronJob');
 
 const app = express();
@@ -21,8 +22,10 @@ const chatRoute = require('./routes/chat');
 const groupRoute = require('./routes/group');
 const adminRoute = require('./routes/admin');
 
+app.use(express.static(path.join(__dirname, 'public')));
+
 app.get('/', (req, res) => {
-    res.send("Hello there, this server is running well.");
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
 
