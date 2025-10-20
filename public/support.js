@@ -37,5 +37,4 @@ function onsubmit(e) {
     email.value = "";
     phone.value = "";
     message.value = "";
-
 }

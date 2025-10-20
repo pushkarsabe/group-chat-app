@@ -33,20 +33,6 @@ app.use('/groups', groupRoute);
 //admin
 app.use('/admin', adminRoute);
 
-// This allows external resources (like Axios from cdn.jsdelivr.net) to be used without being blocked.
-// app.use((req, res, next) => {
-//     res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self'");
-//     next();
-// });
-
-// Serve static files from the public folder
-// app.use(express.static(path.join(__dirname, 'public')));
-
-// app.use((req, res) => {
-//     console.log("url... = " + req.url);
-//     res.sendFile(path.join(__dirname, `public/${req.url}`));
-// });
-
 // Create an HTTP server for Socket.IO and Express
 const server = http.createServer(app);
 
@@ -55,36 +41,6 @@ const { initializeSocket } = require('./socket');
 
 // Initialize Socket.IO
 initializeSocket(server);
-
-//set up socket.io
-// const io = require('socket.io')(server, {
-//     cors: {
-//         origin: "*",// Allow all origins
-//     }
-// });
-
-// io.on('connection', (socket) => {
-//     console.log("User connected with socket id: ", socket.id);
-
-//     // Allow users to join rooms corresponding to a groupId
-//     socket.on('join-group', (groupId) => {
-//         socket.join(groupId);
-//         console.log(`User with socket ID: ${socket.id} joined group: ${groupId}`);
-//     });
-
-//     socket.on('send-message', (message) => {
-//         console.log('message = ' + message);
-//     });
-
-//     socket.on('disconnect', () => {
-//         console.log('User disconnected');
-//     });
-// });
-
-// When a new message is added, broadcast it to all clients in the same group
-// const sendMessageToGroup = (groupId, message) => {
-//     io.to(groupId).emit('newMessage', message);
-// };
 
 // User and Chat relationship
 User.hasMany(Chat, { foreignKey: 'signupId' });

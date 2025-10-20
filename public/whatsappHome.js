@@ -537,6 +537,12 @@ async function loadChatPage(groupId, groupUserID, groupName, groupUserNames) {
     if (!groupId) {
         alert("Please select a group first");
     }
+
+    if (socket) {
+        socket.emit('join-group', groupId); // Use the numeric groupId as the room name
+        console.log(`Socket joined room: ${groupId}`);
+    }
+    
     try {
 
         const response = await axios.get(`http://${HOST}:3000/chat/get-chat?groupId=${groupId}`, {
